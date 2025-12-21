@@ -237,7 +237,7 @@
     <!-- UI Layer -->
     <div id="ui-layer">
         <div class="guide">
-            🖐 <b>Xòe:</b> Ảnh &nbsp;|&nbsp; 💕 <b>Trái tim:</b> Love &nbsp;|&nbsp; ✊ <b>Nắm:</b> Cây &nbsp;|&nbsp; 👋 <b>Vẫy:</b> Đổi màu &nbsp;|&nbsp; 🤟 <b>3 ngón:</b> Đổi nhạc
+            🖐 <b>Xòe:</b> Ảnh &nbsp;|&nbsp; 💕 <b>Trái tim:</b> Love &nbsp;|&nbsp; ✊ <b>Nắm:</b> Cây &nbsp;|&nbsp; 👋 <b>Vẫy:</b> Đổi màu &nbsp;|&nbsp; ✌️ <b>2 ngón:</b> Đổi nhạc
         </div>
     </div>
 
@@ -260,8 +260,8 @@
         // 1. RESOURCES CONFIG 
         // ==========================================
         const musicFiles = [
-            { url: '../music/audio.mp3', name: 'Christmas Song' },
-            { url: '../music/Die With A Smile.mp3', name: 'Die With A Smile' }
+            { url: './music/audio.mp3', name: 'Christmas Song' },
+            { url: './music/Die With A Smile.mp3', name: 'Die With A Smile' }
         ];
         let currentMusicIndex = 0;
         let bgMusic = new Audio(musicFiles[0].url);
@@ -808,12 +808,6 @@
             const speed = 0.08;
             const handRotY = (handX - 0.5) * 4.0;
 
-            // Dynamic background gradient
-            const r = Math.sin(time * 0.1) * 0.02 + 0.02;
-            const g = Math.sin(time * 0.15 + 1) * 0.01 + 0.01;
-            const b = Math.sin(time * 0.12 + 2) * 0.03 + 0.08;
-            renderer.setClearColor(new THREE.Color(r, g, b));
-
             updateSnowfall();
             updateShootingStars();
             updateFireworksAndConfetti();
@@ -830,16 +824,7 @@
             if (state === 'TREE') {
                 titleMesh.visible = true; starMesh.visible = true; loveMesh.visible = false;
                 if(floatingHeartsGroup) floatingHeartsGroup.visible = false;
-                
-                // Cây thông tự xoay chậm
-                groupGold.rotation.y += 0.003;
-                groupRed.rotation.y += 0.003;
-                groupGift.rotation.y += 0.003;
-                
-                // Text glow animation mạnh hơn
-                const glowScale = 1 + Math.sin(time * 2) * 0.05;
-                titleMesh.scale.lerp(new THREE.Vector3(glowScale, glowScale, 1), 0.1);
-                
+                titleMesh.scale.lerp(new THREE.Vector3(1,1,1), 0.1);
                 starMesh.rotation.z -= 0.02; 
                 starMesh.material.opacity = 0.7 + 0.3*Math.sin(time*5);
                 photoMeshes.forEach(m => { m.scale.lerp(new THREE.Vector3(0,0,0), 0.1); m.visible = false; });
@@ -856,14 +841,8 @@
                 if(floatingHeartsGroup) floatingHeartsGroup.visible = true;
                 updateFloatingHearts();
                 
-                // Enhanced glow effect cho text yêu thương
-                const pulseSpeed = 3;
-                const s = 1 + Math.abs(Math.sin(time * pulseSpeed)) * 0.15;
-                loveMesh.scale.set(s, s, 1);
-                
-                // Đổi màu text theo thời gian (hồng -> đỏ -> hồng)
-                const hue = 0.95 + Math.sin(time * 2) * 0.05; // oscillate around pink/red
-                loveMesh.material.color.setHSL(hue, 1.0, 0.6);
+                const s = 1 + Math.abs(Math.sin(time*3))*0.1;
+                loveMesh.scale.set(s,s,1);
                 
                 // Hiện ảnh Heart (từ index 6 trở đi) xoay vòng quanh trái tim
                 const heartAngle = time * 0.5;
@@ -1039,9 +1018,9 @@
                     handXHistory = []; // Reset nếu tay không mở
                 }
                 
-                // === 3. XÁC ĐỊNH STATE VÀ KIỂM TRA 3 NGÓN ===
+                // === 3. XÁC ĐỊNH STATE VÀ KIỂM TRA PEACE SIGN ===
                 let finalState = 'TREE';
-                let foundThreeFingers = false;
+                let foundPeaceSign = false;
                 
                 for(let h = 0; h < numHands; h++) {
                     const lm = results.multiHandLandmarks[h];
@@ -1054,45 +1033,37 @@
                     const pinkyDist = Math.hypot(lm[20].x - hWrist.x, lm[20].y - hWrist.y);
                     const thumbDist = Math.hypot(lm[4].x - hWrist.x, lm[4].y - hWrist.y);
                     
-                    
-                    // 3 NGÓN ĐỔI NHẠC: ngón cái + ngón trỏ + ngón út duỗi, ngón giữa và áp út gập (🤟 ILY sign)
-                    const thumbUp = thumbDist > 0.12;
+                    // PEACE SIGN: ngón trỏ + ngón giữa duỗi, các ngón khác gập
                     const indexUp = indexDist > 0.22;
-                    const middleDown = middleDist < 0.18;
-                    const ringDown = ringDist < 0.16;
-                    const pinkyUp = pinkyDist > 0.16;
+                    const middleUp = middleDist > 0.22;
+                    const ringDown = ringDist < 0.18;
+                    const pinkyDown = pinkyDist < 0.18;
+                    const thumbDown = thumbDist < 0.15;
                     
-                    if(thumbUp && indexUp && middleDown && ringDown && pinkyUp) {
-                        foundThreeFingers = true;
+                    if(indexUp && middleUp && ringDown && pinkyDown) {
+                        foundPeaceSign = true;
                     }
                     
-                    // Tính tổng độ mở để xác định state (CẢ 5 NGÓN)
-                    const hTips = [4, 8, 12, 16, 20]; // Bao gồm ngón cái
+                    // Tính tổng độ mở để xác định state
+                    const hTips = [8, 12, 16, 20];
                     let hOpenDist = 0;
                     hTips.forEach(i => hOpenDist += Math.hypot(lm[i].x - hWrist.x, lm[i].y - hWrist.y));
-                    const hAvgDist = hOpenDist / 5; // Chia 5 ngón
+                    const hAvgDist = hOpenDist / 4;
                     const hPinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
-                    
-                    // Kiểm tra từng ngón riêng để xác định xòe/nắm chính xác hơn
-                    const allFingersOpen = indexDist > 0.20 && middleDist > 0.20 && ringDist > 0.18 && pinkyDist > 0.16 && thumbDist > 0.12;
-                    const allFingersClosed = indexDist < 0.18 && middleDist < 0.18 && ringDist < 0.16 && pinkyDist < 0.15;
                     
                     // Ưu tiên: PHOTO > EXPLODE > TREE
                     if(hPinchDist < 0.05) {
                         // PINCH - ngón cái chạm ngón trỏ
                         if(finalState !== 'PHOTO') finalState = 'PHOTO';
-                    } else if(allFingersOpen) {
-                        // XÒE TAY - tất cả 5 ngón duỗi
+                    } else if(hAvgDist >= 0.25) {
+                        // XÒE TAY - bàn tay mở rộng
                         if(finalState === 'TREE') finalState = 'EXPLODE';
-                    } else if(allFingersClosed) {
-                        // NẮM TAY - tất cả ngón gập
-                        finalState = 'TREE';
                     }
-                    // Nếu không rõ ràng thì giữ nguyên finalState
+                    // Nếu nắm tay thì giữ nguyên finalState (TREE hoặc state tốt hơn)
                 }
                 
-                // Đổi nhạc khi phát hiện 3 ngón (CHỈ khi có 1 tay để tránh nhầm với trái tim)
-                if(foundThreeFingers && numHands === 1) {
+                // Đổi nhạc khi phát hiện peace sign
+                if(foundPeaceSign) {
                     const currentTime = Date.now();
                     if(currentTime - lastPeaceTime > PEACE_COOLDOWN) {
                         toggleMusic();
