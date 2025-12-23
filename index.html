@@ -1044,22 +1044,24 @@
                         foundPeaceSign = true;
                     }
                     
-                    // Tính tổng độ mở để xác định state
-                    const hTips = [8, 12, 16, 20];
-                    let hOpenDist = 0;
-                    hTips.forEach(i => hOpenDist += Math.hypot(lm[i].x - hWrist.x, lm[i].y - hWrist.y));
-                    const hAvgDist = hOpenDist / 4;
+                    // Kiểm tra từng ngón để xác định XÒE/NẮM (đủ 5 ngón)
+                    const allFingersOpen = thumbDist > 0.12 && indexDist > 0.20 && middleDist > 0.20 && ringDist > 0.18 && pinkyDist > 0.16;
+                    const allFingersClosed = indexDist < 0.18 && middleDist < 0.18 && ringDist < 0.16 && pinkyDist < 0.15;
+                    
                     const hPinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
                     
                     // Ưu tiên: PHOTO > EXPLODE > TREE
                     if(hPinchDist < 0.05) {
                         // PINCH - ngón cái chạm ngón trỏ
                         if(finalState !== 'PHOTO') finalState = 'PHOTO';
-                    } else if(hAvgDist >= 0.25) {
-                        // XÒE TAY - bàn tay mở rộng
+                    } else if(allFingersOpen) {
+                        // XÒE TAY - tất cả 5 ngón duỗi
                         if(finalState === 'TREE') finalState = 'EXPLODE';
+                    } else if(allFingersClosed) {
+                        // NẮM TAY - tất cả ngón gập
+                        finalState = 'TREE';
                     }
-                    // Nếu nắm tay thì giữ nguyên finalState (TREE hoặc state tốt hơn)
+                    // Nếu không rõ ràng thì giữ nguyên finalState
                 }
                 
                 // Đổi nhạc khi phát hiện peace sign
