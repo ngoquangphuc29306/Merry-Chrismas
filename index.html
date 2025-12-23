@@ -237,7 +237,7 @@
     <!-- UI Layer -->
     <div id="ui-layer">
         <div class="guide">
-            🖐 <b>Xòe:</b> Ảnh &nbsp;|&nbsp; 💕 <b>Trái tim:</b> Love &nbsp;|&nbsp; ✊ <b>Nắm:</b> Cây &nbsp;|&nbsp; 👋 <b>Vẫy:</b> Đổi màu &nbsp;|&nbsp; ✌️ <b>2 ngón:</b> Đổi nhạc
+            🖐 <b>Xòe:</b> Ảnh &nbsp;|&nbsp; 💕 <b>Trái tim:</b> Love &nbsp;|&nbsp; ✊ <b>Nắm:</b> Cây &nbsp;|&nbsp; 👋 <b>Vẫy:</b> Đổi màu &nbsp;|&nbsp; 🤟 <b>ILY:</b> Đổi nhạc
         </div>
     </div>
 
@@ -1033,14 +1033,14 @@
                     const pinkyDist = Math.hypot(lm[20].x - hWrist.x, lm[20].y - hWrist.y);
                     const thumbDist = Math.hypot(lm[4].x - hWrist.x, lm[4].y - hWrist.y);
                     
-                    // PEACE SIGN: ngón trỏ + ngón giữa duỗi, các ngón khác gập
+                    // ILY SIGN (đổi nhạc): ngón cái + ngón trỏ + ngón út duỗi, ngón giữa và áp út gập
+                    const thumbUp = thumbDist > 0.12;
                     const indexUp = indexDist > 0.22;
-                    const middleUp = middleDist > 0.22;
-                    const ringDown = ringDist < 0.18;
-                    const pinkyDown = pinkyDist < 0.18;
-                    const thumbDown = thumbDist < 0.15;
+                    const middleDown = middleDist < 0.18;
+                    const ringDown = ringDist < 0.16;
+                    const pinkyUp = pinkyDist > 0.16;
                     
-                    if(indexUp && middleUp && ringDown && pinkyDown) {
+                    if(thumbUp && indexUp && middleDown && ringDown && pinkyUp) {
                         foundPeaceSign = true;
                     }
                     
