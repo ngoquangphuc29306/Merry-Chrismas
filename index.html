@@ -295,6 +295,88 @@
             font-size: 11px;
             z-index: 150;
         }
+
+        /* Aurora Borealis Effect */
+        #aurora {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.4;
+            background: linear-gradient(
+                180deg,
+                transparent 0%,
+                rgba(0, 255, 128, 0.1) 20%,
+                rgba(0, 200, 255, 0.15) 40%,
+                rgba(128, 0, 255, 0.1) 60%,
+                transparent 80%
+            );
+            animation: aurora 8s ease-in-out infinite;
+        }
+        @keyframes aurora {
+            0%, 100% { 
+                opacity: 0.3;
+                transform: translateY(-10%) scaleY(1);
+            }
+            25% { 
+                opacity: 0.5;
+                transform: translateY(-5%) scaleY(1.1);
+            }
+            50% { 
+                opacity: 0.4;
+                transform: translateY(-15%) scaleY(0.9);
+            }
+            75% { 
+                opacity: 0.6;
+                transform: translateY(-8%) scaleY(1.05);
+            }
+        }
+
+        /* Christmas Countdown */
+        #countdown {
+            position: absolute;
+            top: 70px;
+            right: 15px;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #FF0000;
+            border-radius: 15px;
+            padding: 10px 15px;
+            color: white;
+            font-size: 11px;
+            text-align: center;
+        }
+        #countdown .countdown-title {
+            color: #FFD700;
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+        #countdown .countdown-time {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        #countdown .countdown-item {
+            text-align: center;
+        }
+        #countdown .countdown-value {
+            color: #FF0000;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        #countdown .countdown-label {
+            color: rgba(255,255,255,0.6);
+            font-size: 8px;
+        }
+        #countdown.christmas-day {
+            background: linear-gradient(135deg, #FF0000, #00FF00);
+            animation: celebrate 0.5s ease infinite;
+        }
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
     </style>
 </head>
 <body>
@@ -337,7 +419,7 @@
         <div class="secret-content">
             <div class="secret-title">🎄 Lời Chúc Giáng Sinh 🎄</div>
             <div class="secret-text">
-                Ngọc iu dấu ơi,<br><br>
+                Ngọc iu dấu cute số một thế giới ơi,<br><br>
                 Giáng sinh này, anh chỉ ước một điều:<br>
                 Được ở bên em mãi mãi! 💕<br><br>
                 Cảm ơn em đã đến bên cuộc đời anh,<br>
@@ -1011,6 +1093,7 @@
             updateSnowfall();
             updateShootingStars();
             updateFireworksAndConfetti();
+            updateFloatingGifts();
             updateParticleGroup(groupGold, 'gold', state, speed, handRotY, time);
             updateParticleGroup(groupRed, 'red', state, speed, handRotY, time);
             updateParticleGroup(groupGift, 'gift', state, speed, handRotY, time);
