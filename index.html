@@ -506,6 +506,19 @@
         
         // Track previous state for PINCH requirement
         let wasExploding = false; // PINCH chỉ được phép sau khi đã xòe tay
+        
+        // === GESTURE SMOOTHNESS IMPROVEMENTS ===
+        // 1. Frame counting debounce - yêu cầu gesture duy trì vài frame trước khi đổi state
+        let gestureFrameCount = 0;
+        let pendingState = null;
+        const REQUIRED_FRAMES = 3; // Số frame cần duy trì gesture trước khi đổi state
+        
+        // 2. State change cooldown - tránh đổi state liên tục
+        let lastStateChangeTime = 0;
+        const STATE_CHANGE_COOLDOWN = 200; // 200ms cooldown giữa các lần đổi state
+        
+        // 3. Improved thresholds
+        const PINCH_THRESHOLD = 0.07; // Nới lỏng từ 0.05 lên 0.07
 
         // ==========================================
         // 3. THREE.JS SYSTEM 
@@ -1285,9 +1298,9 @@
                         // NẮM TAY - tất cả ngón gập
                         finalState = 'TREE';
                         wasExploding = false; // Reset khi nắm tay
-                    } else if(hPinchDist < 0.05 && wasExploding) {
+                    } else if(hPinchDist < PINCH_THRESHOLD && wasExploding) {
                         // PINCH - hoạt động TRONG LÚC đang xòe tay
-                        // (ngón cái chạm ngón trỏ + đang ở trạng thái xòe tay)
+                        // Sử dụng PINCH_THRESHOLD (0.07) thay vì 0.05 cứng
                         finalState = 'PHOTO';
                     } else if(allFingersOpen) {
                         // XÒE TAY - tất cả 5 ngón duỗi rõ ràng
@@ -1305,6 +1318,44 @@
                         toggleMusic();
                         lastPeaceTime = currentTime;
                     }
+                }
+                
+                // === DEBOUNCE & COOLDOWN LOGIC ===
+                const currentTime = Date.now();
+                
+                // Chỉ đổi state nếu:
+                // 1. State mới khác state hiện tại
+                // 2. Đã qua STATE_CHANGE_COOLDOWN
+                // 3. Gesture đã duy trì đủ REQUIRED_FRAMES
+                if(finalState !== state) {
+                    // Kiểm tra xem có phải đang trong cooldown không
+                    if(currentTime - lastStateChangeTime < STATE_CHANGE_COOLDOWN) {
+                        // Còn trong cooldown -> giữ nguyên state
+                        finalState = state;
+                    } else {
+                        // Debounce: kiểm tra gesture có duy trì không
+                        if(pendingState === finalState) {
+                            gestureFrameCount++;
+                            if(gestureFrameCount >= REQUIRED_FRAMES) {
+                                // Đã đủ frame -> cho phép đổi state
+                                lastStateChangeTime = currentTime;
+                                gestureFrameCount = 0;
+                                pendingState = null;
+                            } else {
+                                // Chưa đủ frame -> giữ nguyên state
+                                finalState = state;
+                            }
+                        } else {
+                            // Gesture mới -> bắt đầu đếm
+                            pendingState = finalState;
+                            gestureFrameCount = 1;
+                            finalState = state; // Giữ nguyên state cho đến khi đủ frame
+                        }
+                    }
+                } else {
+                    // State không đổi -> reset debounce
+                    gestureFrameCount = 0;
+                    pendingState = null;
                 }
                 
                 state = finalState;
