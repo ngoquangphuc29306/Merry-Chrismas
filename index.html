@@ -503,6 +503,9 @@
         // Peace Sign (2 fingers) for music change
         let lastPeaceTime = 0;
         const PEACE_COOLDOWN = 2000; // 2 giây giữa các lần đổi nhạc
+        
+        // Track previous state for PINCH requirement
+        let wasExploding = false; // PINCH chỉ được phép sau khi đã xòe tay
 
         // ==========================================
         // 3. THREE.JS SYSTEM 
@@ -1159,14 +1162,31 @@
                 
                 const numHands = results.multiHandLandmarks.length;
                 
-                // === 1. KIỂM TRA TRÁI TIM (2 tay chạm nhau) ===
+                // === 1. KIỂM TRA TRÁI TIM (2 tay tạo hình trái tim) ===
+                // Yêu cầu: 2 tay, ngón trỏ & ngón cái gần nhau (< 0.15)
+                // Thêm điều kiện phân biệt với Fist và Pinch
                 if (numHands === 2) {
                     const h1 = results.multiHandLandmarks[0];
                     const h2 = results.multiHandLandmarks[1];
+                    
+                    // Khoảng cách giữa 2 ngón trỏ và 2 ngón cái
                     const distIndex = Math.hypot(h1[8].x - h2[8].x, h1[8].y - h2[8].y);
                     const distThumb = Math.hypot(h1[4].x - h2[4].x, h1[4].y - h2[4].y);
                     
-                    if (distIndex < 0.12 && distThumb < 0.12) {
+                    // Khoảng cách giữa 2 cổ tay (để đảm bảo 2 tay đang tách riêng, không chồng lên nhau)
+                    const distWrist = Math.hypot(h1[0].x - h2[0].x, h1[0].y - h2[0].y);
+                    
+                    // Kiểm tra ngón trỏ có duỗi ra không (để phân biệt với nắm tay)
+                    const h1IndexDist = Math.hypot(h1[8].x - h1[0].x, h1[8].y - h1[0].y);
+                    const h2IndexDist = Math.hypot(h2[8].x - h2[0].x, h2[8].y - h2[0].y);
+                    const indexExtended = h1IndexDist > 0.15 && h2IndexDist > 0.15;
+                    
+                    // Điều kiện tạo hình trái tim:
+                    // - 2 ngón trỏ gần nhau (distIndex < 0.15)
+                    // - 2 ngón cái gần nhau (distThumb < 0.15)
+                    // - 2 cổ tay cách nhau (distWrist > 0.15) - tránh 2 tay chồng lên nhau
+                    // - Cả 2 ngón trỏ đều duỗi ra (indexExtended) - tránh nhầm với nắm tay
+                    if (distIndex < 0.15 && distThumb < 0.15 && distWrist > 0.15 && indexExtended) {
                         state = 'HEART';
                         handXHistory = []; // Reset wave detection
                         return; // Dừng ngay, không kiểm tra gì thêm
@@ -1193,7 +1213,7 @@
                 const avgDist = openDist / 4;
                 const pinchDist = Math.hypot(mainHand[4].x - mainHand[8].x, mainHand[4].y - mainHand[8].y);
                 
-                // Chỉ phát hiện vẫy tay khi bàn tay đang MỞ (xòe)
+                // Chỉ phát hiện vẫy tay khi  bàn tay đang MỞ (xòe)
                 const isHandOpen = avgDist >= 0.25 && pinchDist >= 0.06;
                 
                 if(isHandOpen) {
@@ -1225,7 +1245,9 @@
                 }
                 
                 // === 3. XÁC ĐỊNH STATE VÀ KIỂM TRA PEACE SIGN ===
-                let finalState = 'TREE';
+                // Giữ nguyên state hiện tại nếu không phát hiện gesture rõ ràng
+                // (tránh nhảy qua TREE khi chuyển từ EXPLODE sang HEART)
+                let finalState = state;
                 let foundPeaceSign = false;
                 
                 for(let h = 0; h < numHands; h++) {
@@ -1251,23 +1273,29 @@
                     }
                     
                     // Kiểm tra từng ngón để xác định XÒE/NẮM (đủ 5 ngón)
+                    // Xòe tay: tất cả 5 ngón phải duỗi rõ ràng
                     const allFingersOpen = thumbDist > 0.12 && indexDist > 0.20 && middleDist > 0.20 && ringDist > 0.18 && pinkyDist > 0.16;
-                    const allFingersClosed = indexDist < 0.18 && middleDist < 0.18 && ringDist < 0.16 && pinkyDist < 0.15;
+                    // Nắm tay: tất cả 4 ngón (trừ cái) phải gập
+                    const allFingersClosed = indexDist < 0.20 && middleDist < 0.20 && ringDist < 0.18 && pinkyDist < 0.17;
                     
                     const hPinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
                     
-                    // Ưu tiên: PHOTO > EXPLODE > TREE
-                    if(hPinchDist < 0.05) {
-                        // PINCH - ngón cái chạm ngón trỏ
-                        if(finalState !== 'PHOTO') finalState = 'PHOTO';
-                    } else if(allFingersOpen) {
-                        // XÒE TAY - tất cả 5 ngón duỗi
-                        if(finalState === 'TREE') finalState = 'EXPLODE';
-                    } else if(allFingersClosed) {
+                    // ƯU TIÊN: NẮM TAY > PINCH (trong lúc xòe) > XÒE TAY
+                    if(allFingersClosed) {
                         // NẮM TAY - tất cả ngón gập
                         finalState = 'TREE';
+                        wasExploding = false; // Reset khi nắm tay
+                    } else if(hPinchDist < 0.05 && wasExploding) {
+                        // PINCH - hoạt động TRONG LÚC đang xòe tay
+                        // (ngón cái chạm ngón trỏ + đang ở trạng thái xòe tay)
+                        finalState = 'PHOTO';
+                    } else if(allFingersOpen) {
+                        // XÒE TAY - tất cả 5 ngón duỗi rõ ràng
+                        finalState = 'EXPLODE';
+                        wasExploding = true; // Đánh dấu đã xòe tay
+                    } else {
+                        // Không rõ ràng -> giữ nguyên state hiện tại
                     }
-                    // Nếu không rõ ràng thì giữ nguyên finalState
                 }
                 
                 // Đổi nhạc khi phát hiện peace sign
