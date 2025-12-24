@@ -6,6 +6,7 @@
     <meta name="author" content="Ngô Quang Phúc">
     <meta name="description" content="Interactive Christmas gift with hand gesture recognition">
     <title>🎄 Magic Christmas - Món quà Giáng sinh</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -43,10 +44,10 @@
 
         /* Camera Preview  */
         #camera-preview {
-            position: absolute; top: 15px; right: 15px;
-            width: 120px; height: 90px;
+            position: absolute; bottom: 15px; left: 15px;
+            width: 160px; height: 120px;
             border: 2px solid rgba(255,0,0,0.5); 
-            transform: scaleX(-1); opacity: 0.6; border-radius: 8px;
+            transform: scaleX(-1); opacity: 0.7; border-radius: 8px;
         }
         
         /* Copyright Styles */
@@ -1177,7 +1178,7 @@
                 
                 // === 1. KIỂM TRA TRÁI TIM (2 tay tạo hình trái tim) ===
                 // Yêu cầu: 2 tay, ngón trỏ & ngón cái gần nhau (< 0.15)
-                // Thêm điều kiện phân biệt với Fist và Pinch
+                // Thêm điều kiện phân biệt với Fist, Pinch, và ILY Sign
                 if (numHands === 2) {
                     const h1 = results.multiHandLandmarks[0];
                     const h2 = results.multiHandLandmarks[1];
@@ -1189,17 +1190,33 @@
                     // Khoảng cách giữa 2 cổ tay (để đảm bảo 2 tay đang tách riêng, không chồng lên nhau)
                     const distWrist = Math.hypot(h1[0].x - h2[0].x, h1[0].y - h2[0].y);
                     
-                    // Kiểm tra ngón trỏ có duỗi ra không (để phân biệt với nắm tay)
+                    // Kiểm tra ngón trỏ có THẬT SỰ duỗi ra không (để phân biệt với nắm tay)
+                    // Cách 1: Khoảng cách đầu ngón đến cổ tay
+                    // Kiểm tra ngón trỏ có THẬT SỰ duỗi ra không
                     const h1IndexDist = Math.hypot(h1[8].x - h1[0].x, h1[8].y - h1[0].y);
                     const h2IndexDist = Math.hypot(h2[8].x - h2[0].x, h2[8].y - h2[0].y);
-                    const indexExtended = h1IndexDist > 0.15 && h2IndexDist > 0.15;
+                    const indexExtended = h1IndexDist > 0.12 && h2IndexDist > 0.12;
                     
-                    // Điều kiện tạo hình trái tim:
-                    // - 2 ngón trỏ gần nhau (distIndex < 0.15)
-                    // - 2 ngón cái gần nhau (distThumb < 0.15)
-                    // - 2 cổ tay cách nhau (distWrist > 0.15) - tránh 2 tay chồng lên nhau
-                    // - Cả 2 ngón trỏ đều duỗi ra (indexExtended) - tránh nhầm với nắm tay
-                    if (distIndex < 0.15 && distThumb < 0.15 && distWrist > 0.15 && indexExtended) {
+                    // Kiểm tra các ngón còn lại (giữa, áp út, út) PHẢI GẬP
+                    const h1MiddleDist = Math.hypot(h1[12].x - h1[0].x, h1[12].y - h1[0].y);
+                    const h2MiddleDist = Math.hypot(h2[12].x - h2[0].x, h2[12].y - h2[0].y);
+                    const h1RingDist = Math.hypot(h1[16].x - h1[0].x, h1[16].y - h1[0].y);
+                    const h2RingDist = Math.hypot(h2[16].x - h2[0].x, h2[16].y - h2[0].y);
+                    const h1PinkyDist = Math.hypot(h1[20].x - h1[0].x, h1[20].y - h1[0].y);
+                    const h2PinkyDist = Math.hypot(h2[20].x - h2[0].x, h2[20].y - h2[0].y);
+                    
+                    // Các ngón giữa, áp út, út phải gập (khoảng cách nhỏ)
+                    const h1OthersBent = h1MiddleDist < 0.20 && h1RingDist < 0.18 && h1PinkyDist < 0.18;
+                    const h2OthersBent = h2MiddleDist < 0.20 && h2RingDist < 0.18 && h2PinkyDist < 0.18;
+                    const otherFingersBent = h1OthersBent && h2OthersBent;
+                    
+                    // === ĐIỀU KIỆN TẠO HÌNH TRÁI TIM (ĐƠN GIẢN HÓA) ===
+                    // 1. 2 ngón trỏ CHẠM nhau (distIndex < 0.15)
+                    // 2. 2 ngón cái CHẠM nhau (distThumb < 0.15)
+                    // 3. 2 cổ tay CÁCH nhau (distWrist > 0.10) - để đảm bảo 2 tay riêng biệt
+                    // 4. Ngón trỏ DUỖI ra (indexExtended)
+                    // 5. Các ngón còn lại GẬP (otherFingersBent)
+                    if (distIndex < 0.15 && distThumb < 0.15 && distWrist > 0.10 && indexExtended && otherFingersBent) {
                         state = 'HEART';
                         handXHistory = []; // Reset wave detection
                         return; // Dừng ngay, không kiểm tra gì thêm
